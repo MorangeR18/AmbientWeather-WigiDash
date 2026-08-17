@@ -1,0 +1,53 @@
+AMBIENT WEATHER STATION FOR G.SKILL WIGIDASH
+============================================
+
+Version 1.0.0
+
+This is an unofficial, community-developed widget. It is not affiliated with
+or endorsed by G.SKILL or Ambient Weather.
+
+INSTALL
+-------
+
+1. Close WigiDash Manager completely, including its notification-area icon.
+2. Press Win+R, enter the following path, and select OK:
+
+   %APPDATA%\G.SKILL\WigiDashManager\Widgets
+
+3. Copy the entire folder named below from this ZIP into the Widgets folder:
+
+   7A2E4F11-3D92-4F65-9B23-C8B6D451A907
+
+4. Start WigiDash Manager.
+5. Find "Ambient Weather Station" in the widget list and add the 5x4 layout
+   to an empty page.
+6. Open the widget settings, enter your own Ambient Weather API Key and
+   Application Key, load your stations, choose one, and save.
+
+UPDATE
+------
+
+Close WigiDash Manager and replace the existing GUID folder with the folder
+from the newer release. Your saved widget settings remain in WigiDash Manager.
+
+UNINSTALL
+---------
+
+Close WigiDash Manager and delete only this folder:
+
+%APPDATA%\G.SKILL\WigiDashManager\Widgets\7A2E4F11-3D92-4F65-9B23-C8B6D451A907
+
+Restart WigiDash Manager.
+
+SECURITY AND SUPPORT
+--------------------
+
+- Obtain releases only from:
+  https://github.com/MorangeR18/AmbientWeather-WigiDash/releases
+- Never post API keys, Application Keys, exact station identifiers, MAC
+  addresses, precise locations, or unredacted logs in a public issue.
+- Verify the downloaded ZIP against the published .sha256 file when desired.
+- Report bugs at:
+  https://github.com/MorangeR18/AmbientWeather-WigiDash/issues
+
+The software is provided under the MIT License without warranty.

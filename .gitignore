@@ -1,0 +1,21 @@
+artifacts/
+build/
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.pfx
+*.snk
+*.log
+.env
+.env.*
+secrets.json
+*.secrets.json
+local.settings.json
+.vscode/
+.idea/
+
+# Local reference material is intentionally not redistributed.
+sdk/
+docs/ambientweather.apib

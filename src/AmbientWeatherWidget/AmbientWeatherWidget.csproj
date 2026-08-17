@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <OutputType>Library</OutputType>
+    <AssemblyName>7A2E4F11-3D92-4F65-9B23-C8B6D451A907</AssemblyName>
+    <RootNamespace>AmbientWeatherWigiDash</RootNamespace>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <WigiDashManagerPath Condition="'$(WigiDashManagerPath)' == ''">C:\Program Files (x86)\G.SKILL\WigiDash Manager</WigiDashManagerPath>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="WigiDashWidgetFramework">
+      <HintPath>$(WigiDashManagerPath)\WigiDashWidgetFramework.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Security" />
+    <Reference Include="System.Web.Extensions" />
+  </ItemGroup>
+</Project>

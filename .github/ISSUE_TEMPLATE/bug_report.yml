@@ -1,0 +1,79 @@
+name: Bug report
+description: Report a reproducible problem with the widget
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem. **Do not include API keys, application keys, exact station identifiers, MAC addresses, precise locations, or unredacted logs.**
+  - type: input
+    id: widget-version
+    attributes:
+      label: Widget version
+      placeholder: 1.0.0
+    validations:
+      required: true
+  - type: input
+    id: manager-version
+    attributes:
+      label: WigiDash Manager version
+      placeholder: 1.2.x
+    validations:
+      required: true
+  - type: input
+    id: windows-version
+    attributes:
+      label: Windows version
+      placeholder: Windows 11 24H2
+    validations:
+      required: true
+  - type: input
+    id: station-model
+    attributes:
+      label: Ambient Weather station or relevant sensor model
+      description: Provide model names only; do not include serial numbers, MAC addresses, station identifiers, or location.
+      placeholder: WS-5000
+  - type: dropdown
+    id: layout
+    attributes:
+      label: Widget layout
+      options:
+        - 5×4 full page
+        - 3×2
+        - 2×2
+        - 2×1
+        - 1×1
+        - Not layout-specific
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the actual result and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open...
+        2. Select...
+        3. Observe...
+    validations:
+      required: true
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Add redacted screenshots or error text if useful.
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Privacy confirmation
+      options:
+        - label: I removed credentials, station identifiers, MAC addresses, precise locations, and other private data.
+          required: true

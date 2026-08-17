@@ -1,0 +1,23 @@
+name: Parser and rendering checks
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  parser-and-rendering:
+    runs-on: windows-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+      - name: Run parser, available credential, and rendering checks
+        shell: powershell
+        run: .\scripts\Test.ps1

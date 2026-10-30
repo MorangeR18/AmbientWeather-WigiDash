@@ -1,4 +1,4 @@
-name: Parser and rendering checks
+name: Widget verification
 
 on:
   push:
@@ -18,6 +18,17 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v7
-      - name: Run parser, available credential, and rendering checks
+      - name: Run installer, connection security, lifecycle, parser, and rendering checks
         shell: powershell
         run: .\scripts\Test.ps1
+      - name: Run installer regression checks in PowerShell 7
+        shell: pwsh
+        run: .\scripts\Test-InstallWidget.ps1
+      - name: Run connection security checks in PowerShell 7
+        shell: pwsh
+        run: |
+          .\scripts\Test-ConnectionErrors.ps1
+          .\scripts\Test-SettingsErrors.ps1
+      - name: Run lifecycle regression checks in PowerShell 7
+        shell: pwsh
+        run: .\scripts\Test-Lifecycle.ps1

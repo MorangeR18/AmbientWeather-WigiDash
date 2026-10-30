@@ -16,10 +16,14 @@ namespace AmbientWeatherWigiDash
         private readonly SemaphoreSlim requestGate = new SemaphoreSlim(1, 1);
         private DateTime lastRequestUtc = DateTime.MinValue;
 
-        public AmbientWeatherClient()
+        public AmbientWeatherClient() : this(new HttpClient()) { }
+
+        internal AmbientWeatherClient(HttpMessageHandler handler) : this(new HttpClient(handler)) { }
+
+        private AmbientWeatherClient(HttpClient httpClient)
         {
             ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
-            http = new HttpClient();
+            http = httpClient;
             http.Timeout = TimeSpan.FromSeconds(15);
             Version version = typeof(AmbientWeatherClient).Assembly.GetName().Version;
             http.DefaultRequestHeaders.UserAgent.ParseAdd("AmbientWeather-WigiDash/" + version.Major + "." + version.Minor + "." + version.Build);
@@ -27,15 +31,19 @@ namespace AmbientWeatherWigiDash
 
         public async Task<List<WeatherDevice>> GetDevicesAsync(string apiKey, string applicationKey, CancellationToken token)
         {
-            string url = BaseUrl + "/devices?apiKey=" + Uri.EscapeDataString(apiKey) +
-                         "&applicationKey=" + Uri.EscapeDataString(applicationKey);
-            object parsed = await GetJsonAsync(url, token).ConfigureAwait(false);
-            return ParseDevices(parsed);
+            try
+            {
+                string url = BaseUrl + "/devices?apiKey=" + Uri.EscapeDataString(apiKey) +
+                             "&applicationKey=" + Uri.EscapeDataString(applicationKey);
+                object parsed = await GetJsonAsync(url, token).ConfigureAwait(false);
+                return ParseDevices(parsed);
+            }
+            catch (Exception ex) { throw SafeRequestError(ex, token); }
         }
 
         internal static List<WeatherDevice> ParseDevicesJson(string json)
         {
-            object parsed = new JavaScriptSerializer { MaxJsonLength = 8 * 1024 * 1024 }.DeserializeObject(json);
+            object parsed = ParseJson(json);
             return ParseDevices(parsed);
         }
 
@@ -64,20 +72,24 @@ namespace AmbientWeatherWigiDash
 
         public async Task<List<WeatherReading>> GetHistoryAsync(string macAddress, string apiKey, string applicationKey, CancellationToken token)
         {
-            string url = BaseUrl + "/devices/" + Uri.EscapeDataString(macAddress) +
-                         "?apiKey=" + Uri.EscapeDataString(apiKey) +
-                         "&applicationKey=" + Uri.EscapeDataString(applicationKey) + "&limit=288";
-            object parsed = await GetJsonAsync(url, token).ConfigureAwait(false);
-            var result = new List<WeatherReading>();
-            var array = parsed as IEnumerable;
-            if (array == null) return result;
-            foreach (object item in array)
+            try
             {
-                var reading = item as Dictionary<string, object>;
-                if (reading != null) result.Add(new WeatherReading(reading));
+                string url = BaseUrl + "/devices/" + Uri.EscapeDataString(macAddress) +
+                             "?apiKey=" + Uri.EscapeDataString(apiKey) +
+                             "&applicationKey=" + Uri.EscapeDataString(applicationKey) + "&limit=288";
+                object parsed = await GetJsonAsync(url, token).ConfigureAwait(false);
+                var result = new List<WeatherReading>();
+                var array = parsed as IEnumerable;
+                if (array == null) return result;
+                foreach (object item in array)
+                {
+                    var reading = item as Dictionary<string, object>;
+                    if (reading != null) result.Add(new WeatherReading(reading));
+                }
+                result.Reverse();
+                return result;
             }
-            result.Reverse();
-            return result;
+            catch (Exception ex) { throw SafeRequestError(ex, token); }
         }
 
         private async Task<object> GetJsonAsync(string url, CancellationToken token)
@@ -90,16 +102,32 @@ namespace AmbientWeatherWigiDash
                 using (HttpResponseMessage response = await http.GetAsync(url, token).ConfigureAwait(false))
                 {
                     lastRequestUtc = DateTime.UtcNow;
-                    string body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                    if ((int)response.StatusCode == 429) throw new InvalidOperationException("Ambient Weather rate limit reached. The widget will retry automatically.");
+                    if ((int)response.StatusCode == 429) throw new ConnectionException(ConnectionErrorKind.RateLimit);
                     if (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden)
-                        throw new InvalidOperationException("Ambient Weather rejected the API credentials.");
+                        throw new ConnectionException(ConnectionErrorKind.RejectedCredentials);
                     if (!response.IsSuccessStatusCode)
-                        throw new InvalidOperationException("Ambient Weather returned HTTP " + (int)response.StatusCode + ".");
-                    return new JavaScriptSerializer { MaxJsonLength = 8 * 1024 * 1024 }.DeserializeObject(body);
+                        throw new ConnectionException(ConnectionErrorKind.Http, (int)response.StatusCode);
+                    string body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    return ParseJson(body);
                 }
             }
             finally { requestGate.Release(); }
+        }
+
+        private static object ParseJson(string body)
+        {
+            try { return new JavaScriptSerializer { MaxJsonLength = 8 * 1024 * 1024 }.DeserializeObject(body); }
+            catch (ArgumentException) { throw new ConnectionException(ConnectionErrorKind.InvalidResponse); }
+            catch (InvalidOperationException) { throw new ConnectionException(ConnectionErrorKind.InvalidResponse); }
+        }
+
+        private static Exception SafeRequestError(Exception error, CancellationToken token)
+        {
+            // Keep caller cancellation distinct from timeouts, and discard the
+            // original exception: its Message/InnerException may contain a URL.
+            if (error is OperationCanceledException && token.IsCancellationRequested)
+                return new OperationCanceledException("The Ambient Weather request was canceled.", token);
+            return ConnectionErrors.ToSafeException(error);
         }
 
         private static Dictionary<string, object> GetDictionary(Dictionary<string, object> source, string key)
@@ -115,6 +143,10 @@ namespace AmbientWeatherWigiDash
         }
 
         private static string FirstNonEmpty(string value, string fallback) { return string.IsNullOrWhiteSpace(value) ? fallback : value; }
-        public void Dispose() { http.Dispose(); requestGate.Dispose(); }
+        public void Dispose()
+        {
+            try { http.Dispose(); }
+            finally { requestGate.Dispose(); }
+        }
     }
 }

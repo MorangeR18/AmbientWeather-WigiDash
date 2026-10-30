@@ -3,6 +3,10 @@ param()
 
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
+& (Join-Path $PSScriptRoot 'Test-InstallWidget.ps1')
+& (Join-Path $PSScriptRoot 'Test-ConnectionErrors.ps1')
+& (Join-Path $PSScriptRoot 'Test-SettingsErrors.ps1')
+& (Join-Path $PSScriptRoot 'Test-Lifecycle.ps1')
 $compiler = 'C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe'
 $tempRoot = Join-Path $projectRoot 'build\temp'
 $previewOutput = Join-Path $projectRoot 'artifacts\previews'
@@ -11,6 +15,7 @@ New-Item -ItemType Directory -Force -Path $tempRoot, $previewOutput | Out-Null
 $sources = @(
     (Join-Path $projectRoot 'src\AmbientWeatherWidget\Models.cs'),
     (Join-Path $projectRoot 'src\AmbientWeatherWidget\AmbientWeatherClient.cs'),
+    (Join-Path $projectRoot 'src\AmbientWeatherWidget\ConnectionErrors.cs'),
     (Join-Path $projectRoot 'src\AmbientWeatherWidget\SecretProtector.cs'),
     (Join-Path $projectRoot 'src\AmbientWeatherWidget\WeatherRenderer.cs'),
     (Join-Path $projectRoot 'tools\Preview\Program.cs')

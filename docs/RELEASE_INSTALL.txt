@@ -1,7 +1,7 @@
 AMBIENT WEATHER STATION FOR G.SKILL WIGIDASH
 ============================================
 
-Version 1.0.0
+Version 1.0.1
 
 This is an unofficial, community-developed widget. It is not affiliated with
 or endorsed by G.SKILL or Ambient Weather.
@@ -29,6 +29,12 @@ UPDATE
 
 Close WigiDash Manager and replace the existing GUID folder with the folder
 from the newer release. Your saved widget settings remain in WigiDash Manager.
+
+Version 1.0.1 requires no settings migration from 1.0.0. The widget identifier,
+installation path, and encrypted credential-storage format are unchanged.
+
+This maintenance release fixes stale source-build installation, sensitive
+connection-error text, and resource cleanup during widget shutdown.
 
 UNINSTALL
 ---------

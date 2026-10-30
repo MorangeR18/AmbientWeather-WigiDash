@@ -104,7 +104,7 @@ namespace AmbientWeatherWigiDash
             try
             {
                 devices = await parent.TestCredentialsAsync(apiKey.Password, applicationKey.Password);
-                if (devices.Count == 0) throw new InvalidOperationException("The account returned no stations.");
+                if (devices.Count == 0) throw new ConnectionException(ConnectionErrorKind.NoStations);
                 PopulateStations(parent.SelectedMacAddress);
                 status.Foreground = Brushes.LightGreen;
                 status.Text = "Connected. Found " + devices.Count + (devices.Count == 1 ? " station." : " stations.");
@@ -112,7 +112,7 @@ namespace AmbientWeatherWigiDash
             catch (Exception ex)
             {
                 status.Foreground = Brushes.Salmon;
-                status.Text = ex.Message;
+                status.Text = ConnectionErrors.GetMessage(ex);
             }
             finally { SetBusy(false, null); }
         }

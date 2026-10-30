@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [ValidatePattern('^\d+\.\d+\.\d+$')]
-    [string]$Version = '1.0.0',
+    [string]$Version = '1.0.1',
     [string]$WigiDashManagerPath = 'C:\Program Files (x86)\G.SKILL\WigiDash Manager'
 )
 

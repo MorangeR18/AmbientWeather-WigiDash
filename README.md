@@ -2,7 +2,7 @@
 
 [![Latest release](https://img.shields.io/github/v/release/MorangeR18/AmbientWeather-WigiDash?display_name=tag&sort=semver)](https://github.com/MorangeR18/AmbientWeather-WigiDash/releases/latest)
 [![Release downloads](https://img.shields.io/github/downloads/MorangeR18/AmbientWeather-WigiDash/total)](https://github.com/MorangeR18/AmbientWeather-WigiDash/releases)
-[![Parser and rendering checks](https://github.com/MorangeR18/AmbientWeather-WigiDash/actions/workflows/verify.yml/badge.svg)](https://github.com/MorangeR18/AmbientWeather-WigiDash/actions/workflows/verify.yml)
+[![Widget verification](https://github.com/MorangeR18/AmbientWeather-WigiDash/actions/workflows/verify.yml/badge.svg)](https://github.com/MorangeR18/AmbientWeather-WigiDash/actions/workflows/verify.yml)
 [![MIT License](https://img.shields.io/github/license/MorangeR18/AmbientWeather-WigiDash)](LICENSE)
 
 An unofficial, open-source widget that turns an Ambient Weather personal weather station into a live G.SKILL WigiDash touchscreen dashboard. Use the full 5×4 page or choose a compact layout for an existing dashboard.
@@ -20,7 +20,9 @@ An unofficial, open-source widget that turns an Ambient Weather personal weather
 
 ### [Download the latest release](https://github.com/MorangeR18/AmbientWeather-WigiDash/releases/latest)
 
-Under **Assets**, download `AmbientWeather-WigiDash-v1.0.0.zip`—not GitHub's automatically generated “Source code” archives.
+Under **Assets**, download `AmbientWeather-WigiDash-v1.0.1.zip`—not GitHub's automatically generated “Source code” archives.
+
+Version 1.0.1 is a maintenance release covering source-build installation, safe connection-error messages, and reliable widget shutdown. See the [release notes](docs/RELEASE_NOTES_v1.0.1.md) for the changes, validation record, and upgrade instructions.
 
 ### Requirements
 
@@ -30,7 +32,7 @@ Under **Assets**, download `AmbientWeather-WigiDash-v1.0.0.zip`—not GitHub's a
 
 ### Installation
 
-1. Download and open `AmbientWeather-WigiDash-v1.0.0.zip`.
+1. Download and open `AmbientWeather-WigiDash-v1.0.1.zip`.
 2. Close WigiDash Manager completely, including its notification-area icon.
 3. Press <kbd>Win</kbd>+<kbd>R</kbd>, paste the following path, and select **OK**:
 
@@ -101,7 +103,7 @@ The WigiDash display is 1024×600. A full 5×4 widget receives 1016×592 pixels 
 
 | Component | Status |
 | --- | --- |
-| Widget | Version 1.0.0 |
+| Widget | Version 1.0.1 |
 | WigiDash Manager | Developed and hardware-tested with 1.2.9559.29232 |
 | Windows | Designed for Windows 10 and Windows 11 |
 | Runtime target | .NET Framework 4.7.2 |
@@ -116,15 +118,18 @@ Later WigiDash Manager versions may update the widget framework. If the widget s
 - The selectable live refresh interval is **30–300 seconds**.
 - The 24-hour history refreshes every **15 minutes**.
 - Requests are serialized with at least **1.1 seconds** between them.
+- Rapid manual refresh requests are coalesced while a refresh is already running. Settings changed during a request are applied together, and a follow-up refresh uses the latest settings.
 - The freshest observation is added to the displayed graph and high/low calculation even between history refreshes.
 
 Historical readings may lag the current observation because Ambient Weather stores history at a lower cadence. The widget uses the device-list endpoint for the freshest observation and device history only for trends.
+
+When the widget is removed or Manager shuts down, the widget stops accepting new work and cancels outstanding requests. Disposal does not wait on the host UI thread. Resource cleanup is deferred until admitted background/manual/settings refreshes, credential tests, and render callbacks finish, including requests that take time to acknowledge cancellation. A timeout never frees resources still in use.
 
 ## Credentials and privacy
 
 - Each installation uses the owner's own API Key and Application Key.
 - Keys and the selected station identifier are encrypted for the current Windows user with Windows DPAPI before WigiDash Manager stores the settings.
-- Keys and the exact station identifier are redacted from widget error logs.
+- Connection-test messages and background refresh errors/logs use fixed troubleshooting text. They never include raw exception text, request URLs, response bodies, keys, or station identifiers, including newly entered keys that have not been saved.
 - Requests use HTTPS. Because Ambient Weather's API places credentials in the query string, trusted local HTTPS-inspection or proxy software may still record them.
 - The project contains no analytics, telemetry, advertising, cloud relay, or third-party weather service.
 
@@ -142,6 +147,8 @@ To remove the local widget, close WigiDash Manager and delete only this folder, 
 4. Restart WigiDash Manager.
 
 Your saved configuration is managed by WigiDash Manager and should remain available. Review the release notes for version-specific upgrade information.
+
+Updating from 1.0.0 to 1.0.1 requires no settings migration. The widget identifier, installation path, and encrypted credential-storage format are unchanged.
 
 ## Troubleshooting
 
@@ -174,10 +181,10 @@ Manager logs are normally under `%USERPROFILE%\AppData\Roaming\G.SKILL\WigiDashM
 Each release includes a `.sha256` file. In PowerShell, calculate the ZIP's checksum:
 
 ```powershell
-Get-FileHash -Algorithm SHA256 .\AmbientWeather-WigiDash-v1.0.0.zip
+Get-FileHash -Algorithm SHA256 .\AmbientWeather-WigiDash-v1.0.1.zip
 ```
 
-Compare the result with `AmbientWeather-WigiDash-v1.0.0.sha256` from the same release.
+Compare the result with `AmbientWeather-WigiDash-v1.0.1.sha256` from the same release.
 
 ## Build from source
 
@@ -198,16 +205,25 @@ The ready-to-install development build is created at:
 artifacts\AmbientWeatherStation\7A2E4F11-3D92-4F65-9B23-C8B6D451A907.dll
 ```
 
-Install that local build with:
+Close WigiDash Manager completely, including its notification-area icon, then build and install from the current source with:
 
 ```powershell
 .\scripts\Install-Widget.ps1
+```
+
+The installer **always runs a fresh Release build**, even when a package DLL already exists or the source appears unchanged. You can run it directly without running `Build.ps1` first. This avoids relying on stale artifacts or file timestamps. A failed build stops installation before any destination files are changed. Manager is checked before the build and again before installation, and the installed DLL must match the freshly built DLL's SHA-256 checksum.
+
+The installation directory remains `%APPDATA%\G.SKILL\WigiDashManager\Widgets\7A2E4F11-3D92-4F65-9B23-C8B6D451A907`. Use `-WidgetsPath` to select another Widgets directory for testing. Preview the operation without building or copying files with:
+
+```powershell
+.\scripts\Install-Widget.ps1 -WhatIf
 ```
 
 The build references `WigiDashWidgetFramework.dll` supplied by the installed WigiDash Manager and never packages that framework. If Manager is installed elsewhere, provide its directory explicitly:
 
 ```powershell
 .\scripts\Build.ps1 -WigiDashManagerPath 'D:\Apps\G.SKILL\WigiDash Manager'
+.\scripts\Install-Widget.ps1 -WigiDashManagerPath 'D:\Apps\G.SKILL\WigiDash Manager'
 ```
 
 ## Test and package
@@ -218,12 +234,41 @@ Run the local verification suite:
 .\scripts\Test.ps1
 ```
 
-It validates Ambient Weather JSON parsing, renders all five supported layouts, and verifies the Windows DPAPI round trip when a Windows user profile is available. Rendered previews are written to `artifacts\previews`.
+It runs the isolated installer, connection-security, and lifecycle regression tests, validates Ambient Weather JSON parsing, renders all five supported layouts, and verifies the Windows DPAPI round trip when a Windows user profile is available. Rendered previews are written to `artifacts\previews`. The suite uses synthetic data and requires no weather-station credentials or API calls.
+
+Run only the installer regression tests with either Windows PowerShell 5.1 or PowerShell 7:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Test-InstallWidget.ps1
+pwsh.exe -NoProfile -File .\scripts\Test-InstallWidget.ps1
+```
+
+These tests copy the real installer into temporary synthetic projects and substitute the build and Manager process checks. They cover initial and unchanged installations, source changes with preserved timestamps, added/deleted source files, stale artifacts, build failures, Manager shutdown checks, dry runs, and checksum verification. They do not need WigiDash Manager, a compiler, or a real widget installation. The full `Test.ps1` suite and a real `Build.ps1` need Windows; the real build also requires the installed WigiDash framework. Confirming widget loading and display on the device requires WigiDash Manager and hardware.
+
+Run only the connection-security checks on Windows with:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Test-ConnectionErrors.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Test-SettingsErrors.ps1
+```
+
+These checks compile against Windows .NET Framework and use simulated HTTP responses and the actual settings control with a synthetic parent. They cover sensitive error payloads, newly entered credentials, password edits during an in-flight test, and useful failure messages. They require neither WigiDash Manager nor live weather credentials and never make API calls. Test output contains scenario names and results rather than exception payloads. Both scripts also work with `pwsh.exe`.
+
+Connection errors retain useful categories such as rejected credentials, rate limits, HTTP status, network failures, timeouts, and unreadable responses. Unexpected errors use a generic message so that untrusted exception details cannot reach the settings interface or refresh logs.
+
+Run only the lifecycle regression checks on Windows with either PowerShell host:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\Test-Lifecycle.ps1
+pwsh.exe -NoProfile -File .\scripts\Test-Lifecycle.ps1
+```
+
+These checks compile the actual widget instance and HTTP client with the Windows .NET Framework compiler. Minimal original framework, rendering, and storage test doubles plus a synthetic HTTP handler keep the tests independent of WigiDash Manager, its framework DLL, real station credentials, saved settings, and API access. Controlled request/callback completion exercises rapid refreshes, settings changes, cancellation, disposal, and callback failures. Test output contains scenario names and results without credentials or exception payloads. Live shutdown and restart behavior in WigiDash Manager still requires a manual device check.
 
 Maintainers can build a release ZIP and checksum with:
 
 ```powershell
-.\scripts\Package-Release.ps1 -Version 1.0.0
+.\scripts\Package-Release.ps1 -Version 1.0.1
 ```
 
 The packaging script verifies the tests and version, builds against the locally installed WigiDash framework, and writes release assets under `artifacts\release`.
@@ -231,14 +276,21 @@ The packaging script verifies the tests and version, builds against the locally 
 ## Project layout
 
 ```text
-.github\                         Contribution forms and parser/rendering workflow
+.github\                         Contribution forms and verification workflow
 docs\                            Release instructions and publishable images
 scripts\Build.ps1               Builds the native widget DLL
-scripts\Install-Widget.ps1      Installs a local development build
+scripts\Install-Widget.ps1      Rebuilds and installs from current source
 scripts\Package-Release.ps1     Creates the release ZIP and SHA-256 file
-scripts\Test.ps1                Runs parser, credential, and render checks
+scripts\Test.ps1                Runs installer, security, lifecycle, parser, and render checks
+scripts\Test-InstallWidget.ps1  Runs isolated synthetic installer regression checks
+scripts\Test-ConnectionErrors.ps1 Runs offline HTTP/error-message security checks
+scripts\Test-SettingsErrors.ps1 Runs settings UI error-message security checks
+scripts\Test-Lifecycle.ps1      Runs offline refresh and shutdown regression checks
 src\AmbientWeatherWidget\       Widget, settings UI, API client, and renderer
 tools\Preview\                  Deterministic preview/self-test utility
+tools\ConnectionTests\          Synthetic HTTP and error-message regression tests
+tools\SettingsTests\            Settings UI tests with a synthetic parent
+tools\LifecycleTests\           Refresh and shutdown tests with controlled test doubles
 ```
 
 ## Contributing and support
